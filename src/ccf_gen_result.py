@@ -29,6 +29,3 @@ for idx,name in enumerate(img_sets):
                 result.append(pixel)
                 #print result
                 writer.writerow(result)
-        
-    
-

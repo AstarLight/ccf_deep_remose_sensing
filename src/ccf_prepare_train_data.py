@@ -33,7 +33,7 @@ mask2_pool = ['2_class_8bits_vegetation_mask',
 
 def read_image_3(image_name):
 
-    img = tiff.imread("../data/all/train/{}.tif".format(image_name)) / 255.0
+    img = tiff.imread("../data/all/train/{}.tif".format(image_name)) / 255
     print 'image shape:',img.shape
    # result = img
     result = np.transpose(img, (2, 0, 1))

@@ -17,13 +17,13 @@ def read_image_3(image_id):
     img = misc.imread("../data/train/{}.png".format(image_id)) / 255.0
     
     result = np.transpose(img, (2, 0, 1))
-    return result.astype(np.uint8)
+    return result.astype(np.float16)
 
 def read_mask(image_id):
 
     mask = misc.imread("../data/mask_road/{}.png".format(image_id))
     mask = mask[np.newaxis,:,:]
-    return mask.astype(np.uint8)
+    return mask
 
 
 def cache_train_3():
@@ -40,7 +40,7 @@ def cache_train_3():
 
     f = h5py.File(os.path.join(data_path, 'chen_train_road.h5'), 'w', compression='blosc:lz4', compression_opts=9)
 
-    imgs = f.create_dataset('train', (num_train, num_channels, image_rows, image_cols), dtype=np.uint8)
+    imgs = f.create_dataset('train', (num_train, num_channels, image_rows, image_cols), dtype=np.float16)
     imgs_mask = f.create_dataset('train_mask', (num_train, num_mask_channels, image_rows, image_cols), dtype=np.uint8)
 
     ids = []
