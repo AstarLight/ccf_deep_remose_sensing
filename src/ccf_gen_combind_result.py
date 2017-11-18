@@ -23,30 +23,33 @@ mask3_pool = ['3_8bits_vegetation_predict.png','3_8bits_road_predict.png',
 #after mask combind
 img_sets = ['final_1_8bits_predict.png','final_2_8bits_predict.png','final_3_8bits_predict.png']
 
+
 def combind_all_mask():
     for mask_num in tqdm(range(3)):
         final_mask = np.zeros((7939,7969),np.uint8)#生成一个全黑全0图像
         if mask_num == 0:
             mask_pool = mask1_pool
-        else if mask_num == 1:
+        elif mask_num == 1:
             mask_pool = mask2_pool
-        else if mask_num == 2:
+        elif mask_num == 2:
             mask_pool = mask3_pool
         final_name = img_sets[mask_num]
         for idx,name in enumerate(mask_pool):
             img = cv2.imread(name,0)
             height,width = img.shape
             label_value = idx+1  #coressponding labels value
-            for i in range(height):
+            for i in tqdm(range(height)):
                 for j in range(width):
-                    if final_mask[i,j] == 0 && img[i,j] == 1:
-                        final_mask = img[i,j] * label_value
+                    if final_mask[i,j] == 0 and img[i,j] == 255:
+                        final_mask[i,j] = label_value
                         
             cv2.imwrite(final_name,final_mask)           
                 
                 
-        
+print 'combinding mask...'
+combind_all_mask()                
 
+print 'genrating result csv..'
 for idx,name in enumerate(img_sets):
     img = cv2.imread(name,0)
     height,width = img.shape
