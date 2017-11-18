@@ -26,7 +26,9 @@ img_sets = ['final_1_8bits_predict.png','final_2_8bits_predict.png','final_3_8bi
 
 def combind_all_mask():
     for mask_num in tqdm(range(3)):
-        final_mask = np.zeros((7939,7969),np.uint8)#生成一个全黑全0图像
+        final_mask = np.zeros((5190,5204),np.uint8)#生成一个全黑全0图像
+        #final_mask = cv2.imread('final_1_8bits_predict.png',0)
+        
         if mask_num == 0:
             mask_pool = mask1_pool
         elif mask_num == 1:

@@ -13,7 +13,7 @@ from keras import backend as K
 from keras.models import model_from_json
 import numpy as np
 K.set_image_dim_ordering('th')
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "5"
 
 def scale_percentile(matrix):
     matrix.transpose([1,2,0])
@@ -28,8 +28,8 @@ def scale_percentile(matrix):
     return matrix
 
 def read_model(cross=''):
-    json_name = 'architecture_128_4_buildings_n3b_v2' + cross + '.json'
-    weight_name = 'model_weights_128_4_buildings_n3b_v2' + cross + '.h5'
+    json_name = 'architecture_128_25_chen_buildings_v1' + cross + '.json'
+    weight_name = 'model_weights_128_25_chen_buildings_v1' + cross + '.h5'
     model = model_from_json(open(os.path.join('../cache', json_name)).read())
     model.load_weights(os.path.join('../cache', weight_name))
     return model
@@ -41,7 +41,7 @@ sample = pd.read_csv('../data/sample_submission.csv')
 data_path = '../data'
 num_channels = 3
 num_mask_channels = 1
-threashold = 0.3
+threashold = 0.4
 
 three_band_path = os.path.join(data_path, 'three_band')
 

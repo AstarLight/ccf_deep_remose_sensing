@@ -28,8 +28,8 @@ def scale_percentile(matrix):
     return matrix
 
 def read_model(cross=''):
-    json_name = 'architecture_128_4_buildings_n3b_v2' + cross + '.json'
-    weight_name = 'model_weights_128_4_buildings_n3b_v2' + cross + '.h5'
+    json_name = 'architecture_128_25_chen_road_v1' + cross + '.json'
+    weight_name = 'model_weights_128_25_chen_road_v1' + cross + '.h5'
     model = model_from_json(open(os.path.join('../cache', json_name)).read())
     model.load_weights(os.path.join('../cache', weight_name))
     return model
