@@ -45,7 +45,7 @@ def combind_all_mask():
                     if final_mask[i,j] == 0 and img[i,j] == 255:
                         final_mask[i,j] = label_value
                         
-            cv2.imwrite(final_name,final_mask)           
+        cv2.imwrite(final_name,final_mask)           
                 
                 
 print 'combinding mask...'
