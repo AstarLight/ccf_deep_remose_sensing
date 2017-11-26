@@ -25,7 +25,7 @@ import threading
 
 from keras.models import model_from_json
 K.set_image_dim_ordering('th')
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 img_rows = 112
 img_cols = 112
 
@@ -247,10 +247,12 @@ if __name__ == '__main__':
 
     print('[{}] Creating and compiling model...'.format(str(datetime.datetime.now())))
 
-    model = get_unet0()
+    #model = get_unet0()
+    ##use 25 epoch training weights
+    model = read_model('128_50_li_buildings_v1')
 
     print('[{}] Reading train...'.format(str(datetime.datetime.now())))
-    f = h5py.File(os.path.join(data_path, 'chen_train_building.h5'), 'r')
+    f = h5py.File(os.path.join(data_path, 'li_train_building.h5'), 'r')
 
     X_train = f['train']
 
@@ -261,21 +263,22 @@ if __name__ == '__main__':
     train_ids = np.array(f['train_ids'])
 
     batch_size = 128
-    nb_epoch = 25
+    nb_epoch = 75
 
     history = History()
     callbacks = [
         history,
     ]
 
-    suffix = 'chen_buildings_v1'
+    suffix = 'li_buildings_v1'
     model.compile(optimizer=Nadam(lr=1e-3), loss=jaccard_coef_loss, metrics=['binary_crossentropy', jaccard_coef_int])
     model.fit_generator(batch_generator(X_train, y_train, batch_size, horizontal_flip=True, vertical_flip=True, swap_axis=True),
                         nb_epoch=nb_epoch,
                         verbose=1,
                         samples_per_epoch=batch_size * 400,
                         callbacks=callbacks,
-                        nb_worker=8
+                        nb_worker=8,
+                        initial_epoch=50
                         )
 
     save_model(model, "{batch}_{epoch}_{suffix}".format(batch=batch_size, epoch=nb_epoch, suffix=suffix))

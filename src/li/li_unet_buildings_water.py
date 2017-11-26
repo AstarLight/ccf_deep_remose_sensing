@@ -146,6 +146,31 @@ def flip_axis(x, axis):
     x = x.swapaxes(0, axis)
     return x
 
+def is_pos_label(im):
+    sum = im.sum()
+    if sum > 10:
+        return True
+    else:
+        return False
+
+
+def form_batch3(X, y, batch_size):
+    X_batch = np.zeros((batch_size, num_channels, img_rows, img_cols))
+    y_batch = np.zeros((batch_size, num_mask_channels, img_rows, img_cols))
+    X_height = X.shape[2]
+    X_width = X.shape[3]
+
+    count = 0
+    while count < batch_size:
+        random_width = random.randint(0, X_width - img_cols - 1)
+        random_height = random.randint(0, X_height - img_rows - 1)
+        random_image = random.randint(0, X.shape[0] - 1)
+        if not is_pos_label(y[random_image, :, random_height: random_height + img_rows, random_width: random_width + img_cols]):
+            continue
+        y_batch[count] = y[random_image, :, random_height: random_height + img_rows, random_width: random_width + img_cols]
+        X_batch[count] = np.array(X[random_image, :, random_height: random_height + img_rows, random_width: random_width + img_cols])
+        count += 1
+    return X_batch, y_batch
 
 def form_batch(X, y, batch_size):
     X_batch = np.zeros((batch_size, num_channels, img_rows, img_cols))
@@ -191,7 +216,7 @@ def threadsafe_generator(f):
 @threadsafe_generator
 def batch_generator(X, y, batch_size, horizontal_flip=False, vertical_flip=False, swap_axis=False):
     while True:
-        X_batch, y_batch = form_batch(X, y, batch_size)
+        X_batch, y_batch = form_batch3(X, y, batch_size)
 
         for i in range(X_batch.shape[0]):
             xb = X_batch[i]
@@ -247,10 +272,11 @@ if __name__ == '__main__':
 
     print('[{}] Creating and compiling model...'.format(str(datetime.datetime.now())))
 
-    model = get_unet0()
+    #model = get_unet0()
+    model = read_model('128_25_chen_road_v1')
 
     print('[{}] Reading train...'.format(str(datetime.datetime.now())))
-    f = h5py.File(os.path.join(data_path, 'chen_train_water.h5'), 'r')
+    f = h5py.File(os.path.join(data_path, 'li_train_water.h5'), 'r')
 
     X_train = f['train']
 
@@ -261,21 +287,22 @@ if __name__ == '__main__':
     train_ids = np.array(f['train_ids'])
 
     batch_size = 128
-    nb_epoch = 25
+    nb_epoch = 50
 
     history = History()
     callbacks = [
         history,
     ]
 
-    suffix = 'chen_water_v1'
+    suffix = 'li_water_v1'
     model.compile(optimizer=Nadam(lr=1e-3), loss=jaccard_coef_loss, metrics=['binary_crossentropy', jaccard_coef_int])
     model.fit_generator(batch_generator(X_train, y_train, batch_size, horizontal_flip=True, vertical_flip=True, swap_axis=True),
                         nb_epoch=nb_epoch,
                         verbose=1,
                         samples_per_epoch=batch_size * 400,
                         callbacks=callbacks,
-                        nb_worker=8
+                        nb_worker=8,
+                        initial_epoch=25
                         )
 
     save_model(model, "{batch}_{epoch}_{suffix}".format(batch=batch_size, epoch=nb_epoch, suffix=suffix))

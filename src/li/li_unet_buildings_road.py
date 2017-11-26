@@ -146,22 +146,95 @@ def flip_axis(x, axis):
     x = x.swapaxes(0, axis)
     return x
 
+def is_pos_label(im):
+    sum = im.sum()
+    if sum > 10:
+        return True
+    else:
+        return False
 
-def form_batch(X, y, batch_size):
+
+
+
+def form_batch3(X, y, batch_size):
     X_batch = np.zeros((batch_size, num_channels, img_rows, img_cols))
     y_batch = np.zeros((batch_size, num_mask_channels, img_rows, img_cols))
     X_height = X.shape[2]
     X_width = X.shape[3]
 
-    for i in range(batch_size):
+    count = 0
+    while count < batch_size:
         random_width = random.randint(0, X_width - img_cols - 1)
         random_height = random.randint(0, X_height - img_rows - 1)
-
         random_image = random.randint(0, X.shape[0] - 1)
-
-        y_batch[i] = y[random_image, :, random_height: random_height + img_rows, random_width: random_width + img_cols]
-        X_batch[i] = np.array(X[random_image, :, random_height: random_height + img_rows, random_width: random_width + img_cols])
+        if not is_pos_label(y[random_image, :, random_height: random_height + img_rows, random_width: random_width + img_cols]):
+            continue
+        y_batch[count] = y[random_image, :, random_height: random_height + img_rows, random_width: random_width + img_cols]
+        X_batch[count] = np.array(X[random_image, :, random_height: random_height + img_rows, random_width: random_width + img_cols])
+        count += 1
     return X_batch, y_batch
+
+
+def form_batch2(X, y, batch_size):
+    X_batch = np.zeros((batch_size, num_channels, img_rows, img_cols))
+    y_batch = np.zeros((batch_size, num_mask_channels, img_rows, img_cols))
+    X_height = X.shape[2]
+    X_width = X.shape[3]
+    
+    pos_batch_size = batch_size / 2
+    neg_batch_size = batch_size / 2
+    
+    #get positive mask
+    pos_count = 0
+    while pos_count < pos_batch_size:
+        random_width = random.randint(0, X_width - img_cols - 1)
+        random_height = random.randint(0, X_height - img_rows - 1)
+        random_image = random.randint(0, X.shape[0] - 1)
+        
+        if not is_pos_label(y[random_image, :, random_height: random_height + img_rows, random_width: random_width + img_cols]):
+            continue
+        
+        y_batch[pos_count] = y[random_image, :, random_height: random_height + img_rows, random_width: random_width + img_cols]
+        X_batch[pos_count] = np.array(X[random_image, :, random_height: random_height + img_rows, random_width: random_width + img_cols])
+        pos_count += 1
+    print 'pos_count:',pos_count
+
+    #get negative mask   
+    neg_count = 0
+    while neg_count < neg_batch_size:
+        random_width = random.randint(0, X_width - img_cols - 1)
+        random_height = random.randint(0, X_height - img_rows - 1)
+        random_image = random.randint(0, X.shape[0] - 1)
+        
+        if is_pos_label(y[random_image, :, random_height: random_height + img_rows, random_width: random_width + img_cols]):
+            continue
+        
+        y_batch[neg_count+neg_batch_size] = y[random_image, :, random_height: random_height + img_rows, random_width: random_width + img_cols]
+        X_batch[neg_count+neg_batch_size] = np.array(X[random_image, :, random_height: random_height + img_rows, random_width: random_width + img_cols])
+        neg_count += 1
+    print 'neg_count:',neg_count
+
+    print 'x_batch:',x_batch.shape
+    print 'y_batch:',y_batch.shape
+    return X_batch, y_batch
+
+
+
+def form_batch(X, y, batch_size):
+        X_batch = np.zeros((batch_size, num_channels, img_rows, img_cols))
+        y_batch = np.zeros((batch_size, num_mask_channels, img_rows, img_cols))
+        X_height = X.shape[2]
+        X_width = X.shape[3]
+
+        for i in range(batch_size):
+            random_width = random.randint(0, X_width - img_cols - 1)
+            random_height = random.randint(0, X_height - img_rows - 1)
+
+            random_image = random.randint(0, X.shape[0] - 1)
+
+            y_batch[i] = y[random_image, :, random_height: random_height + img_rows, random_width: random_width + img_cols]
+            X_batch[i] = np.array(X[random_image, :, random_height: random_height + img_rows, random_width: random_width + img_cols])
+        return X_batch, y_batch
 
 
 class threadsafe_iter:
@@ -191,7 +264,7 @@ def threadsafe_generator(f):
 @threadsafe_generator
 def batch_generator(X, y, batch_size, horizontal_flip=False, vertical_flip=False, swap_axis=False):
     while True:
-        X_batch, y_batch = form_batch(X, y, batch_size)
+        X_batch, y_batch = form_batch3(X, y, batch_size)
 
         for i in range(X_batch.shape[0]):
             xb = X_batch[i]
@@ -217,34 +290,6 @@ def batch_generator(X, y, batch_size, horizontal_flip=False, vertical_flip=False
 
         yield X_batch, y_batch[:, :, 16:16 + img_rows - 32, 16:16 + img_cols - 32]
 
-@threadsafe_generator
-def batch_generator2(X, y, batch_size, horizontal_flip=False, vertical_flip=False, swap_axis=False):
-    while True:
-        X_batch, y_batch = form_batch(X, y, batch_size)
-
-        for i in range(X_batch.shape[0]):
-            xb = X_batch[i]
-            yb = y_batch[i]
-
-            if horizontal_flip:
-                if np.random.random() < 0.5:
-                    xb = flip_axis(xb, 1)
-                    yb = flip_axis(yb, 1)
-
-            if vertical_flip:
-                if np.random.random() < 0.5:
-                    xb = flip_axis(xb, 2)
-                    yb = flip_axis(yb, 2)
-
-            if swap_axis:
-                if np.random.random() < 0.5:
-                    xb = xb.swapaxes(1, 2)
-                    yb = yb.swapaxes(1, 2)
-
-            X_batch[i] = xb
-            y_batch[i] = yb
-
-        yield X_batch, y_batch[:, :, 16:16 + img_rows - 32, 16:16 + img_cols - 32]
 
 def save_model(model, cross):
     json_string = model.to_json()
