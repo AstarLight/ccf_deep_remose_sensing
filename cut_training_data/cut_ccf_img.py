@@ -5,7 +5,7 @@ import numpy as np
 from scipy import misc
 from tqdm import tqdm
 
-file_name = ['1_8bits_train_semi', '2_8bits_train_semi', '3_8bits_train_semi', '1-8bits-train', '2-8bits-train', '1_8bits_test', '2_8bits_test']
+file_name = ['1_8bits_train_semi', '2_8bits_train_semi', '3_8bits_train_semi', '1-8bits-train', '2-8bits-train']
 save_prefix = '../ccf_all/after_cut/'
 save_postfix = '.png'
 
