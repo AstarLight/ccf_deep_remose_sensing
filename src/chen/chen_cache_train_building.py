@@ -9,37 +9,39 @@ import tifffile as tiff
 from scipy import misc
 
 
-data_path = '../data'
+data_path = '../data/mask_cut/building_mask/'
 
-datasheet = ['1-8bits', '2-8bits'] # fill the name of data!!!!!!
+def get_all_file_name(file_dir):
+    for root, dirs, files in os.walk(file_dir):
+        return files
 
 def read_image_3(image_id):
 
-    img = misc.imread("../data/train/{}.png".format(image_id)) / 255.0
+    img = misc.imread("../data/training/{}".format(image_id)) / 255.0
     
     result = np.transpose(img, (2, 0, 1))
     return result.astype(np.float16)
 
 def read_mask(image_id):
 
-    mask = misc.imread("../data/mask_building/{}.png".format(image_id))
+    mask = misc.imread("../data/mask_cut/building_mask/{}".format(image_id))
     mask = mask[np.newaxis,:,:]
     return mask
 
 
 def cache_train_3():
 
+    datasheet = get_all_file_name(data_path)
+    num_train = len(datasheet) #how many training pictures do this have? the number of data or Just fill: len(datasheet)
 
-    num_train = 2 #how many training pictures do this have? the number of data or Just fill: len(datasheet)
-
-    image_rows = 7939 # all picture's rows and cols, just corresponse to xxxx.shape, the best situation is that all the pictures have the same shape.
-    image_cols = 7969
+    image_rows = 1000 # all picture's rows and cols, just corresponse to xxxx.shape, the best situation is that all the pictures have the same shape.
+    image_cols = 1000
 
     num_channels = 3
 
     num_mask_channels = 1
 
-    f = h5py.File(os.path.join(data_path, 'chen_train_building.h5'), 'w', compression='blosc:lz4', compression_opts=9)
+    f = h5py.File(os.path.join('../data/', 'chen_train_building5.h5'), 'w', compression='blosc:lz4', compression_opts=9)
 
     imgs = f.create_dataset('train', (num_train, num_channels, image_rows, image_cols), dtype=np.float16)
     imgs_mask = f.create_dataset('train_mask', (num_train, num_mask_channels, image_rows, image_cols), dtype=np.uint8)
