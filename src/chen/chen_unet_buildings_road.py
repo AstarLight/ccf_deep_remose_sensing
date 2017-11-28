@@ -26,8 +26,8 @@ import threading
 from keras.models import model_from_json
 K.set_image_dim_ordering('th')
 os.environ["CUDA_VISIBLE_DEVICES"] = "3"
-img_rows = 112
-img_cols = 112
+img_rows = 572 # 256 112
+img_cols = 572 # 256 112
 
 
 smooth = 1e-12
@@ -130,7 +130,7 @@ def get_unet0():
     conv9 = BatchNormalization(mode=0, axis=1)(conv9)
     conv9 = keras.layers.advanced_activations.ELU()(conv9)
     conv9 = Convolution2D(32, 3, 3, border_mode='same', init='he_uniform')(conv9)
-    crop9 = Cropping2D(cropping=((16, 16), (16, 16)))(conv9)
+    crop9 = Cropping2D(cropping=((92, 92), (92, 92)))(conv9) # 32,32    # 16 16
     conv9 = BatchNormalization(mode=0, axis=1)(crop9)
     conv9 = keras.layers.advanced_activations.ELU()(conv9)
     conv10 = Convolution2D(num_mask_channels, 1, 1, activation='sigmoid')(conv9)
