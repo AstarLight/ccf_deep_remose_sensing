@@ -26,8 +26,8 @@ import threading
 from keras.models import model_from_json
 K.set_image_dim_ordering('th')
 os.environ["CUDA_VISIBLE_DEVICES"] = "2"
-img_rows = 572 # 256 112
-img_cols = 572 # 256 112
+img_rows = 512
+img_cols = 512
 
 
 smooth = 1e-12
@@ -130,7 +130,7 @@ def get_unet0():
     conv9 = BatchNormalization(mode=0, axis=1)(conv9)
     conv9 = keras.layers.advanced_activations.ELU()(conv9)
     conv9 = Convolution2D(32, 3, 3, border_mode='same', init='he_uniform')(conv9)
-    crop9 = Cropping2D(cropping=((92, 92), (92, 92)))(conv9) # 32,32    # 16 16
+    crop9 = Cropping2D(cropping=((64, 64), (64, 64)))(conv9)
     conv9 = BatchNormalization(mode=0, axis=1)(crop9)
     conv9 = keras.layers.advanced_activations.ELU()(conv9)
     conv10 = Convolution2D(num_mask_channels, 1, 1, activation='sigmoid')(conv9)
@@ -146,6 +146,31 @@ def flip_axis(x, axis):
     x = x.swapaxes(0, axis)
     return x
 
+def is_pos_label(im):
+    sum = im.sum()
+    if (float(sum) / float(img_rows*img_cols) > 0.5):
+        return True
+    else:
+        return False
+
+
+def form_batch3(X, y, batch_size):
+    X_batch = np.zeros((batch_size, num_channels, img_rows, img_cols))
+    y_batch = np.zeros((batch_size, num_mask_channels, img_rows, img_cols))
+    X_height = X.shape[2]
+    X_width = X.shape[3]
+
+    count = 0
+    while count < batch_size:
+        random_width = random.randint(0, X_width - img_cols - 1)
+        random_height = random.randint(0, X_height - img_rows - 1)
+        random_image = random.randint(0, X.shape[0] - 1)
+        if not is_pos_label(y[random_image, :, random_height: random_height + img_rows, random_width: random_width + img_cols]):
+            continue
+        y_batch[count] = y[random_image, :, random_height: random_height + img_rows, random_width: random_width + img_cols]
+        X_batch[count] = np.array(X[random_image, :, random_height: random_height + img_rows, random_width: random_width + img_cols])
+        count += 1
+    return X_batch, y_batch
 
 def form_batch(X, y, batch_size):
     X_batch = np.zeros((batch_size, num_channels, img_rows, img_cols))
@@ -191,7 +216,7 @@ def threadsafe_generator(f):
 @threadsafe_generator
 def batch_generator(X, y, batch_size, horizontal_flip=False, vertical_flip=False, swap_axis=False):
     while True:
-        X_batch, y_batch = form_batch(X, y, batch_size)
+        X_batch, y_batch = form_batch3(X, y, batch_size)
 
         for i in range(X_batch.shape[0]):
             xb = X_batch[i]
@@ -215,7 +240,7 @@ def batch_generator(X, y, batch_size, horizontal_flip=False, vertical_flip=False
             X_batch[i] = xb
             y_batch[i] = yb
 
-        yield X_batch, y_batch[:, :, 16:16 + img_rows - 32, 16:16 + img_cols - 32]
+        yield X_batch, y_batch[:, :, 64:64 + img_rows - 128, 64:64 + img_cols - 128]
 
 
 def save_model(model, cross):
@@ -250,7 +275,7 @@ if __name__ == '__main__':
     model = get_unet0()
 
     print('[{}] Reading train...'.format(str(datetime.datetime.now())))
-    f = h5py.File(os.path.join(data_path, 'chen_train_building.h5'), 'r')
+    f = h5py.File(os.path.join(data_path, 'chen_train_building5.h5'), 'r')
 
     X_train = f['train']
 
@@ -260,7 +285,7 @@ if __name__ == '__main__':
 
     train_ids = np.array(f['train_ids'])
 
-    batch_size = 128
+    batch_size = 8
     nb_epoch = 25
 
     history = History()
@@ -268,12 +293,12 @@ if __name__ == '__main__':
         history,
     ]
 
-    suffix = 'chen_buildings_v1'
+    suffix = 'chen_buildings5_v1'
     model.compile(optimizer=Nadam(lr=1e-3), loss=jaccard_coef_loss, metrics=['binary_crossentropy', jaccard_coef_int])
     model.fit_generator(batch_generator(X_train, y_train, batch_size, horizontal_flip=True, vertical_flip=True, swap_axis=True),
                         nb_epoch=nb_epoch,
                         verbose=1,
-                        samples_per_epoch=batch_size * 400,
+                        samples_per_epoch=batch_size * 800,
                         callbacks=callbacks,
                         nb_worker=8
                         )
